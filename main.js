@@ -6,7 +6,7 @@ const Template = require('./Lib/template');
 const ShowList = require('./Lib/readdir');
 const SanitizeHTML = require('sanitize-html');
 const Path = require('path');
-const models = require('./models');
+const db = require('./models');
 var mysql = require('mysql');
 
 var connection = mysql.createConnection({
@@ -17,16 +17,6 @@ var connection = mysql.createConnection({
 	database: 'db',
 });
 
-async function Response(title, description, response) {
-	try {
-		let result = await ShowList(title, description);
-		response.writeHead(200);
-		response.end(result);
-	} catch (err) {
-		console.log('Problem happens');
-	}
-}
-
 var app = http.createServer(function (request, response) {
 	var _url = request.url;
 	var parsed_url = url.parse(_url, true);
@@ -35,15 +25,149 @@ var app = http.createServer(function (request, response) {
 	var pathname = parsed_url.pathname;
 	var path = parsed_url.path;
 
-	if (pathname === '/sql') {
-		// models.sequelize.sync();
+	console.log('pathname : ', pathname);
+	// console.log(path);
+	if (pathname === '/sequelize') {
+		if (queryData.id === undefined) {
+			const template = `		
+				<!doctype html>
+				<html>
+				<head> 
+					<title>Sequelize</title>
+					<meta charset="utf-8">
+				</head>
+				<body>
+					<h1>Sequelize MySQL!<h1>
+					<h2><a href="/sequelize?id=create">CREATE</a></h2>
+					<h2><a href="/sequelize?id=insert">INSERT</a></h2>
+					<h2><a href="/sequelize?id=delete">DELETE</a></h2>
+					<h2><a href="/sequelize?id=drop">DROP</a></h2>
+				</body>
+				</html>`;
+			response.writeHead(200);
+			response.end(template);
+		} else if (queryData.id === 'create') {
+			const template = `		
+				<!doctype html>
+				<html>
+				<head> 
+					<title>Sequelize</title>
+					<meta charset="utf-8">
+				</head>
+				<body>
+					<h1>Sequelize MySQL!<h1>
+					<h2>New Table is created!</h2>
+					<h2><a href="/sequelize?id=create">CREATE</a></h2>
+					<h2><a href="/sequelize?id=insert">INSERT</a></h2>
+					<h2><a href="/sequelize?id=delete">DELETE</a></h2>
+					<h2><a href="/sequelize?id=drop">DROP</a></h2>
+				</body>
+				</html>`;
+			db.sequelize
+				.sync({ force: true })
+				.then(() => {
+					console.log('DB connection complete!');
+					response.writeHead(200);
+					response.end(template);
+				})
+				.catch((err) => {
+					console.error(err);
+					process.exit();
+				});
+		} else if (queryData.id === 'insert') {
+			const Form = `
+				<form action="/sequelize_insert_process" method="post">
+					<p><input type="text" name="userID" placeholder="userID"></p>
+					<p><input type="text" name="name" placeholder="name"></p>
+					<p><input type="text" name="age" placeholder="age"></p>
+					<p>
+						<input type="submit">
+					</p>
+				</form>
+				`;
+			var template = `		
+				<!doctype html>
+				<html>
+				<head> 
+					<title>Sequelize_Create</title>
+					<meta charset="utf-8">
+				</head>
+				<body>
+					<h1>Sequelize Create!</h1>
+					${Form}
+				</body>
+				</html>`;
 
-		connection.connect();
+			response.writeHead(200);
+			response.end(template);
+		} else if (queryData.id === 'delete') {
+			db.User.destroy({ where: { id: 1 } })
+				.then(() => {
+					console.log('Delete Table Data Complete!');
+					response.writeHead(200);
+					response.end('SQL OK!, Delete Table Data Complete!');
+				})
+				.catch((err) => {
+					console.error(err);
+				});
+		} else if (queryData.id === 'Show_table') {
+			db.User.findAll()
+				.then((results) => {
+					console.log('Find All (select) processed!');
+					console.log(results);
+					response.writeHead(200);
+					response.end('SQL OK!, Show Table Data Complete!');
+				})
+				.catch((err) => {
+					console.error(err);
+				});
+		} else if (queryData.id === 'describe') {
+			db.User.describe({});
+		} else if (queryData.id === 'delete') {
+			db.User.destroy({ where: { id: 1 } })
+				.then(() => {
+					console.log('Delete Table Data Complete!');
+					response.writeHead(200);
+					response.end('SQL OK!, Delete Table Data Complete!');
+				})
+				.catch((err) => {
+					console.error(err);
+				});
+		}
+	} else if (pathname === '/sequelize_insert_process') {
+		var body = '';
+		request.on('data', function (data) {
+			body += data;
+		});
+		request.on('end', function () {
+			const post = qs.parse(body);
+			const _userID = post.userID;
+			const _name = post.name;
+			const _age = post.age;
+			db.User.create({
+				userID: _userID,
+				name: _name,
+				age: _age,
+			})
+				.then(() => {
+					console.log('Insert data done!');
+					response.writeHead(302, { Location: '/sequelize' });
+					response.end();
+				})
+				.catch((err) => {
+					console.error(err);
+				});
+		});
+	} else if (pathname === '/sql') {
+		connection.connect((err) => {
+			// if (err) throw err;
+			console.log('mySQL Connected!');
+		});
 
-		console.log('This is MySQL!!');
 		connection.query(
-			"INSERT INTO `music` VALUES (1, 1, 'Name')",
+			"INSERT INTO `coffee` VALUES ('cafe latte', 'france')",
 			function (error, results, fields) {
+				// if (error) throw error;
 				if (!error) {
 					console.log('DB insert success!!');
 					console.log(results, fields);
@@ -95,10 +219,11 @@ var app = http.createServer(function (request, response) {
 			const description = post.description;
 			const sanitizedTitle = SanitizeHTML(title);
 			const sanitizedDescription = SanitizeHTML(description);
-			fs.writeFile(`./Data/${sanitizedTitle}`, sanitizedDescription, 'utf8', (err) => {
-				response.writeHead(302, { Location: `/?id=${sanitizedTitle}` });
-				response.end();
-			});
+			console.log(post);
+			// fs.writeFile(`./Data/${sanitizedTitle}`, sanitizedDescription, 'utf8', (err) => {
+			// 	response.writeHead(302, { Location: `/?id=${sanitizedTitle}` });
+			// 	response.end();
+			// });
 		});
 	} else if (pathname === '/update') {
 		const sanitizedTitle = SanitizeHTML(title);

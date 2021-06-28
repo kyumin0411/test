@@ -1,61 +1,74 @@
 import { useState } from 'react';
-import TodoComponent from './TodoComponent';
 
 function Counter() {
-  const [data, setData] = useState([]);
-  const [input, setInput] = useState({
-    input: '',
-  });
+	const [input, setInput] = useState({ input: '' });
+	const [data, setData] = useState([]);
 
-  const onEdit = (e, index, isCheck = false) => {
-    setData(
-      data.map((_value, _index) => {
-        if (index === _index) {
-          return {
-            ..._value,
-            [e.target.name]: isCheck ? e.target.checked : e.target.value,
-          };
-        }
-        return _value;
-      })
-    );
-  };
-
-  const onDelete = (index) => {
-    setData(data.filter((_value, _index) => (index === _index ? false : true)));
-  };
-
-  return (
-    <>
-      <input
-        name='input'
-        value={input.input}
-        onChange={function (e) {
-          setInput({ ...input, [e.target.name]: e.target.value });
-        }}
-      />
-      <button
-        onClick={() => {
-          setData(
-            data.concat({ title: input.input, isCheck: false, isEdit: false })
-          );
-        }}
-      >
-        추가
-      </button>
-      {data.map(function (value, index) {
-        return (
-          <TodoComponent
-            key={index}
-            data={value}
-            index={index}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        );
-      })}
-    </>
-  );
+	console.log(input.input);
+	console.log(data);
+	return (
+		<div>
+			<input
+				name='input'
+				value={input.input}
+				className='input_box'
+				type='text'
+				onChange={(e) => {
+					setInput({ ...input, [e.target.name]: e.target.value });
+				}}
+			/>
+			<button
+				onClick={() => {
+					setData(data.concat({ title: input.input, isCheck: false, isEdit: false }));
+				}}
+			>
+				추가
+			</button>
+			{data.map((value, index) => {
+				return (
+					<div className='box'>
+						<input
+							type='checkbox'
+							className='box__checkbox'
+							checked={value.isCheck}
+							onChange={(e) => {
+								setData(
+									data.map((_value, _index) => {
+										if (index === _index) {
+											return { ...value, isCheck: e.target.checked };
+										}
+										return _value;
+									})
+								);
+							}}
+						/>
+						<div className='box__text'>{value.title}</div>
+						<button
+							onClick={() =>
+								setData(
+									data.map((_value, _index) => {
+										if (index === _index) {
+											return { ...value, isEdit: !_value.isEdit };
+										}
+										return _value;
+									})
+								)
+							}
+						>
+							toggle
+						</button>
+						<button
+							onClick={() => {
+								setData(data.filter((_value, _index) => (index === _index ? false : true)));
+							}}
+						>
+							삭제
+						</button>
+					</div>
+				);
+			})}
+		</div>
+	);
 }
 
 export default Counter;
