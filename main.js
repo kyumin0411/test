@@ -17,6 +17,14 @@ var connection = mysql.createConnection({
 	database: 'db',
 });
 
+// <% for(let ${user} of ${db.User}) { %>
+// 	<tr>
+// 			<td><%= ${user.userID} %></td>
+// 			<td><%= ${user.name} %></td>
+// 			<td><%= ${user.age} %></td>
+// 	</tr>
+// <% } %>
+
 var app = http.createServer(function (request, response) {
 	var _url = request.url;
 	var parsed_url = url.parse(_url, true);
@@ -26,7 +34,7 @@ var app = http.createServer(function (request, response) {
 	var path = parsed_url.path;
 
 	console.log('pathname : ', pathname);
-	// console.log(path);
+
 	if (pathname === '/sequelize') {
 		if (queryData.id === undefined) {
 			const template = `		
@@ -38,7 +46,21 @@ var app = http.createServer(function (request, response) {
 				</head>
 				<body>
 					<h1>Sequelize MySQL!<h1>
+					<h2>Let's start, Create a new table.</h2>
 					<h2><a href="/sequelize?id=create">CREATE</a></h2>
+				</body>
+				</html>`;
+			response.writeHead(200);
+			response.end(template);
+		} else if (queryData.id === 'ready') {
+			const template = `<!doctype html>
+				<html>
+				<head> 
+					<title>Sequelize</title>
+					<meta charset="utf-8">
+				</head>
+				<body>
+					<h1>Sequelize MySQL!<h1>
 					<h2><a href="/sequelize?id=insert">INSERT</a></h2>
 					<h2><a href="/sequelize?id=delete">DELETE</a></h2>
 					<h2><a href="/sequelize?id=drop">DROP</a></h2>
@@ -56,8 +78,7 @@ var app = http.createServer(function (request, response) {
 				</head>
 				<body>
 					<h1>Sequelize MySQL!<h1>
-					<h2>New Table is created!</h2>
-					<h2><a href="/sequelize?id=create">CREATE</a></h2>
+					<h2>New Table 'Users' is created!</h2>
 					<h2><a href="/sequelize?id=insert">INSERT</a></h2>
 					<h2><a href="/sequelize?id=delete">DELETE</a></h2>
 					<h2><a href="/sequelize?id=drop">DROP</a></h2>
@@ -77,6 +98,7 @@ var app = http.createServer(function (request, response) {
 		} else if (queryData.id === 'insert') {
 			const Form = `
 				<form action="/sequelize_insert_process" method="post">
+					<h2>Submit following information </h2>
 					<p><input type="text" name="userID" placeholder="userID"></p>
 					<p><input type="text" name="name" placeholder="name"></p>
 					<p><input type="text" name="age" placeholder="age"></p>
@@ -101,34 +123,90 @@ var app = http.createServer(function (request, response) {
 			response.writeHead(200);
 			response.end(template);
 		} else if (queryData.id === 'delete') {
-			db.User.destroy({ where: { id: 1 } })
+			const Form = `
+					<form action="/sequelize_delete_process" method="post">
+						<p><input type="text" name="userID" placeholder="userID"></p>
+						<p>
+							<input type="submit">
+						</p>
+					</form>
+					`;
+			var template = `		
+					<!doctype html>
+					<html>
+					<head> 
+						<title>Sequelize_Delete</title>
+						<meta charset="utf-8">
+					</head>
+					<body>
+						<h1>Sequelize Delete!</h1>
+						${Form}
+					</body>
+					</html>`;
+
+			response.writeHead(200);
+			response.end(template);
+		} else if (queryData.id === 'drop') {
+			const template = `		
+				<!doctype html>
+				<html>
+				<head> 
+					<title>Sequelize</title>
+					<meta charset="utf-8">
+				</head>
+				<body>
+					<h1>Sequelize MySQL!<h1>
+					<h2>There is no Table.. Please Create new table.</h2>
+					<h2><a href="/sequelize?id=create">CREATE</a></h2>
+				</body>
+				</html>`;
+			db.User.drop()
 				.then(() => {
-					console.log('Delete Table Data Complete!');
+					console.log('DB table drop Complete!');
 					response.writeHead(200);
-					response.end('SQL OK!, Delete Table Data Complete!');
+					response.end(template);
 				})
 				.catch((err) => {
 					console.error(err);
+					process.exit();
 				});
 		} else if (queryData.id === 'Show_table') {
+			console.log('db', db);
+			console.log('db.models : ', db.models);
+			console.log('db.model :', db.Model);
+			console.log('');
+			// console.log('db.User : ', db.User);
+			// console.log('db.User.userID : ', db.User.userID);
+			var template = `
+				<!doctype html>
+				<html>
+				<head> 
+					<title>Sequelize_Delete</title>
+					<meta charset="utf-8">
+				</head>
+				<body>
+					<h1>Sequelize Delete!</h1>
+					<table>
+						<tr>
+								<td>userID</td>
+								<td>name</td>
+								<td>age</td>
+						</tr>
+						<tr>
+							<td><%= ${db.User.userID} %></td>
+							<td><%= ${db.User.name} %></td>
+							<td><%= ${db.User.age} %></td>
+						</tr>
+				</table>
+				</body>
+				</html>
+				`;
 			db.User.findAll()
 				.then((results) => {
-					console.log('Find All (select) processed!');
-					console.log(results);
+					// console.log('Find All (select) processed!');
+					// console.log(results);
 					response.writeHead(200);
-					response.end('SQL OK!, Show Table Data Complete!');
-				})
-				.catch((err) => {
-					console.error(err);
-				});
-		} else if (queryData.id === 'describe') {
-			db.User.describe({});
-		} else if (queryData.id === 'delete') {
-			db.User.destroy({ where: { id: 1 } })
-				.then(() => {
-					console.log('Delete Table Data Complete!');
-					response.writeHead(200);
-					response.end('SQL OK!, Delete Table Data Complete!');
+					response.end(template);
 				})
 				.catch((err) => {
 					console.error(err);
@@ -151,7 +229,26 @@ var app = http.createServer(function (request, response) {
 			})
 				.then(() => {
 					console.log('Insert data done!');
-					response.writeHead(302, { Location: '/sequelize' });
+					response.writeHead(302, { Location: '/sequelize?id=ready' });
+					response.end();
+				})
+				.catch((err) => {
+					console.error(err);
+				});
+		});
+	} else if (pathname === '/sequelize_delete_process') {
+		var body = '';
+		request.on('data', function (data) {
+			body += data;
+		});
+		request.on('end', function () {
+			const post = qs.parse(body);
+			console.log(post);
+			const _userID = post.userID;
+			db.User.destroy({ where: { userID: _userID } })
+				.then(() => {
+					console.log('Delete Table Data Complete!');
+					response.writeHead(302, { Location: '/sequelize?id=ready' });
 					response.end();
 				})
 				.catch((err) => {
