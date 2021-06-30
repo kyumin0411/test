@@ -7,6 +7,8 @@ const ShowList = require('./Lib/readdir');
 const SanitizeHTML = require('sanitize-html');
 const Path = require('path');
 const db = require('./models');
+const express = require('express');
+const app = express();
 var mysql = require('mysql');
 
 var connection = mysql.createConnection({
@@ -16,14 +18,6 @@ var connection = mysql.createConnection({
 	password: 'alticast#',
 	database: 'db',
 });
-
-// <% for(let ${user} of ${db.User}) { %>
-// 	<tr>
-// 			<td><%= ${user.userID} %></td>
-// 			<td><%= ${user.name} %></td>
-// 			<td><%= ${user.age} %></td>
-// 	</tr>
-// <% } %>
 
 var app = http.createServer(function (request, response) {
 	var _url = request.url;
@@ -177,34 +171,35 @@ var app = http.createServer(function (request, response) {
 			console.log('');
 			// console.log('db.User : ', db.User);
 			// console.log('db.User.userID : ', db.User.userID);
-			var template = `
-				<!doctype html>
-				<html>
-				<head> 
-					<title>Sequelize_Delete</title>
-					<meta charset="utf-8">
-				</head>
-				<body>
-					<h1>Sequelize Delete!</h1>
-					<table>
-						<tr>
-								<td>userID</td>
-								<td>name</td>
-								<td>age</td>
-						</tr>
-						<tr>
-							<td><%= ${db.User.userID} %></td>
-							<td><%= ${db.User.name} %></td>
-							<td><%= ${db.User.age} %></td>
-						</tr>
-				</table>
-				</body>
-				</html>
-				`;
 			db.User.findAll()
 				.then((results) => {
 					// console.log('Find All (select) processed!');
-					// console.log(results);
+					var template = `
+					<!doctype html>
+					<html>
+					<head> 
+						<title>Sequelize_Delete</title>
+						<meta charset="utf-8">
+					</head>
+					<body>
+						<h1>Sequelize Delete!</h1>
+						<table>
+							<tr>
+									<td>userID</td>
+									<td>name</td>
+									<td>age</td>
+							</tr>
+							${results?.map(data => 
+								`<tr>
+									<td>${data.dataValues.userID}</td>
+									<td>${data.dataValues.name}</td>
+									<td>${data.dataValues.age}</td>
+								</tr>`)}
+					</table>
+					</body>
+					</html>
+					`;
+					
 					response.writeHead(200);
 					response.end(template);
 				})
