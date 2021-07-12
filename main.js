@@ -169,11 +169,8 @@ var app = http.createServer(function (request, response) {
       console.log("db.models : ", db.models);
       console.log("db.model :", db.Model);
       console.log("");
-      // console.log('db.User : ', db.User);
-      // console.log('db.User.userID : ', db.User.userID);
       db.User.findAll()
         .then((results) => {
-          // console.log('Find All (select) processed!');
           var template = `
 					<!doctype html>
 					<html>
@@ -254,14 +251,12 @@ var app = http.createServer(function (request, response) {
     });
   } else if (pathname === "/sql") {
     connection.connect((err) => {
-      // if (err) throw err;
       console.log("mySQL Connected!");
     });
 
     connection.query(
       "INSERT INTO `coffee` VALUES ('cafe latte', 'france')",
       function (error, results, fields) {
-        // if (error) throw error;
         if (!error) {
           console.log("DB insert success!!");
           console.log(results, fields);
